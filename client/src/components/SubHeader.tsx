@@ -1,4 +1,4 @@
-import { Save, Share2 } from "lucide-react";
+import { LoaderCircle, Save } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Select,
@@ -15,26 +15,39 @@ import {
 import { RootState } from "@/redux/store";
 import { handleError } from "@/utils/handleError";
 import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import { Share } from "./Share";
 
 export const SubHeader = () => {
+  const [loading, setLoading] = useState<boolean>(false);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const {id} = useParams();
 
   const currentLanguage = useSelector(
     (state: RootState) => state.compilerSlice.currentLanguage
   );
 
-  const fullCode = useSelector((state:RootState) => state.compilerSlice.languages);
+  const fullCode = useSelector(
+    (state: RootState) => state.compilerSlice.languages
+  );
 
   const handleSaveCode = async () => {
+    setLoading(true);
     try {
       const res = await axios.post("http://localhost:8000/compiler/save", {
-        fullCode: fullCode
-      })
+        fullCode: fullCode,
+      });
       console.log(res.data);
+      navigate(`/compiler/${res.data.url}`, { replace: true });
     } catch (error) {
       handleError(error);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="sub-header h-[45px] bg-black text-white p-2 flex justify-between items-center">
@@ -65,14 +78,20 @@ export const SubHeader = () => {
           className="flex justify-center items-center gap-1"
           variant="success"
           onClick={handleSaveCode}
+          disabled={loading === true}
         >
-          <Save size={16} />
-          Save
+          {loading ? (
+            <>
+              <LoaderCircle size={16} />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save size={16} /> Save
+            </>
+          )}
         </Button>
-        <Button variant="outline">
-          {" "}
-          <Share2 size={16} />
-        </Button>
+        {id && <Share />}
       </div>
     </div>
   );
